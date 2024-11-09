@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "bingo-on-chain-backend": {
+      "candid": "src/bingo-on-chain-backend/bingo-on-chain-backend.did",
+      "package": "bingo-on-chain-backend",
+      "type": "rust"
+    },
+    "bingo-on-chain-frontend": {
+      "dependencies": [
+        "bingo-on-chain-backend"
+      ],
+      "source": [
+        "src/bingo-on-chain-frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "bingo-on-chain-frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

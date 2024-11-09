@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "src/bingo-on-chain-backend"
+]
+resolver = "2"
