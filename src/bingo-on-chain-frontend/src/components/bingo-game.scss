@@ -1,0 +1,255 @@
+.bingo-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  position: relative;
+
+  .called-numbers-display {
+    width: 100%;
+    max-width: 310px;
+    margin-bottom: 20px;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    padding: 15px;
+    color: white;
+
+    .current-call {
+      text-align: center;
+      margin-bottom: 15px;
+
+      h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+        color: #9ca3af;
+      }
+
+      .number {
+        font-size: 48px;
+        font-weight: bold;
+        color: #f59e0b;
+      }
+
+      .timer {
+        background-color: #374151;
+        border-radius: 4px;
+        height: 24px;
+        position: relative;
+        overflow: hidden;
+        margin-top: 15px;
+        
+        .timer-bar {
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 100%;
+          background-color: #2563eb;
+          transition: width 1s linear;
+        }
+
+        .timer-text {
+          position: relative;
+          z-index: 1;
+          line-height: 24px;
+          font-size: 14px;
+          font-weight: 500;
+          color: white;
+          mix-blend-mode: difference;
+        }
+      }
+    }
+
+    .recent-calls {
+      h3 {
+        font-size: 16px;
+        margin-bottom: 8px;
+        color: #9ca3af;
+        text-align: center;
+      }
+
+      .numbers {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+
+        .recent-number {
+          background-color: #374151;
+          padding: 8px 12px;
+          border-radius: 4px;
+          font-size: 18px;
+          font-weight: bold;
+        }
+      }
+    }
+  }
+
+  .win-message, .fail-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 20px 40px;
+    border-radius: 8px;
+    font-size: 36px;
+    font-weight: bold;
+    z-index: 10;
+    animation: popIn 0.5s ease-out;
+  }
+
+  .win-message {
+    color: gold;
+  }
+
+  .fail-message {
+    color: #ef4444;
+  }
+
+  .checking-message {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #3b82f6;
+    animation: pulse 1.5s infinite;
+  }
+
+  .challenge-button {
+    margin-top: 20px;
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #16a34a;
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  .bingo-board {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background-color: #333;
+    padding: 2px;
+    border-radius: 8px;
+  }
+
+  .header-row {
+    display: flex;
+    gap: 2px;
+  }
+
+  .bingo-header {
+    width: 65px;
+    height: 40px;
+    background-color: #1a1a1a;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .board-row {
+    display: flex;
+    gap: 2px;
+  }
+
+  .bingo-square {
+    width: 65px;
+    height: 65px;
+    background-color: white;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:contains('FREE') {
+      font-size: 18px;
+      color: #e11d48;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: #f0f0f0;
+    }
+
+    &:active:not(:disabled) {
+      background-color: #e0e0e0;
+    }
+
+    &.clicked {
+      background-color: #3b82f6;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background-color: #2563eb;
+      }
+    }
+
+    &.checking {
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+
+    &.winner {
+      animation: celebrate 1s infinite;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &.current-call {
+      border: 2px solid #f59e0b;
+      animation: highlight 2s infinite;
+    }
+  }
+}
+
+@keyframes celebrate {
+  0% { background-color: #3b82f6; }
+  33% { background-color: #22c55e; }
+  66% { background-color: #eab308; }
+  100% { background-color: #3b82f6; }
+}
+
+@keyframes popIn {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+@keyframes highlight {
+  0% { border-color: #f59e0b; }
+  50% { border-color: transparent; }
+  100% { border-color: #f59e0b; }
+}
