@@ -1,3 +1,31 @@
+type Principal = text;
+type TimerId = nat64;
+
+type Card = record {
+  numbers: vec vec nat32;
+  owner: Principal;
+};
+
+type GameState = record {
+  cards: vec record { Principal; Card };
+  called_numbers: vec nat32;
+  is_active: bool;
+  winners: vec Principal;
+};
+
+type GameError = variant {
+  GameInProgress;
+  GameNotInProgress;
+  PlayerAlreadyHasCard;
+  PlayerNotFound;
+  NotEnoughPlayers;
+};
+
 service : {
-    "greet": (text) -> (text) query;
+  generate_card: (Principal) -> (opt Card, opt GameError) query;
+  reset_card: (Principal) -> (opt Card, opt GameError) query;
+  get_game_state: () -> (GameState) query;
+  get_player_count: () -> (nat) query;
+  get_card: (Principal) -> (opt Card) query;
+  get_remaining_slots: () -> (nat) query;
 }
