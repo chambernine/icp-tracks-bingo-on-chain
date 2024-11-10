@@ -1,17 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import './bingo-game.scss';
+import React, { useState, useEffect } from "react";
+import "./bingo-game.scss";
+import { bingo_on_chain_backend } from "declarations/bingo-on-chain-backend";
 
 const BingoGame = () => {
-  const HEADERS = ['B', 'I', 'N', 'G', 'O'];
+  const HEADERS = ["B", "I", "N", "G", "O"];
   const CALL_INTERVAL = 15; // seconds
-  
+
   // Your existing mock data
   const mockBingoNumbers = [
-    12, 5, 22, 9, 15,
-    3, 18, 7, 24, 13,
-    16, 4, 'FREE', 11, 25,
-    8, 19, 2, 21, 14,
-    17, 6, 20, 1, 10
+    12,
+    5,
+    22,
+    9,
+    15,
+    3,
+    18,
+    7,
+    24,
+    13,
+    16,
+    4,
+    "FREE",
+    11,
+    25,
+    8,
+    19,
+    2,
+    21,
+    14,
+    17,
+    6,
+    20,
+    1,
+    10,
   ];
 
   // Add timer state
@@ -35,7 +56,7 @@ const BingoGame = () => {
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Modified fetchCalledNumber to reset timer
@@ -43,20 +64,20 @@ const BingoGame = () => {
     try {
       const newNumber = Math.floor(Math.random() * 75) + 1;
       setCalledNumber(newNumber);
-      setRecentCalls(prev => {
+      setRecentCalls((prev) => {
         const updated = [newNumber, ...prev];
         return updated.slice(0, 5);
       });
       setTimeUntilNextCall(CALL_INTERVAL); // Reset timer
     } catch (error) {
-      console.error('Error fetching called number:', error);
+      console.error("Error fetching called number:", error);
     }
   };
 
   // Timer countdown effect
   useEffect(() => {
     const timerInterval = setInterval(() => {
-      setTimeUntilNextCall(prev => {
+      setTimeUntilNextCall((prev) => {
         if (prev <= 1) {
           fetchCalledNumber();
           return CALL_INTERVAL;
@@ -77,28 +98,31 @@ const BingoGame = () => {
   const checkCanChallenge = (clickedSquares) => {
     // Your existing challenge check logic
     for (let i = 0; i < 25; i += 5) {
-      if (clickedSquares.slice(i, i + 5).every(square => square)) return true;
+      if (clickedSquares.slice(i, i + 5).every((square) => square)) return true;
     }
     for (let i = 0; i < 5; i++) {
-      if ([0,1,2,3,4].every(j => clickedSquares[i + j * 5])) return true;
+      if ([0, 1, 2, 3, 4].every((j) => clickedSquares[i + j * 5])) return true;
     }
-    if ([0,6,12,18,24].every(i => clickedSquares[i])) return true;
-    if ([4,8,12,16,20].every(i => clickedSquares[i])) return true;
+    if ([0, 6, 12, 18, 24].every((i) => clickedSquares[i])) return true;
+    if ([4, 8, 12, 16, 20].every((i) => clickedSquares[i])) return true;
     return false;
   };
 
   const handleChallenge = async () => {
+    bingo_on_chain_backend.generate_card().then((card) => {
+      console.log("CARD", card);
+    });
     setIsChecking(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       const success = Math.random() > 0.5;
-      setChallengeResult(success ? 'success' : 'failed');
+      setChallengeResult(success ? "success" : "failed");
       setTimeout(() => {
         setChallengeResult(null);
       }, 3000);
     } catch (error) {
-      console.error('Challenge verification failed:', error);
-      setChallengeResult('failed');
+      console.error("Challenge verification failed:", error);
+      setChallengeResult("failed");
     } finally {
       setIsChecking(false);
     }
@@ -112,19 +136,17 @@ const BingoGame = () => {
     setCanChallenge(checkCanChallenge(newClicked));
   };
 
-  const renderHeader = (letter) => (
-    <div className="bingo-header">{letter}</div>
-  );
+  const renderHeader = (letter) => <div className="bingo-header">{letter}</div>;
 
   const renderSquare = (i) => {
     const isCalledNumber = board[i] === calledNumber;
     return (
-      <button 
+      <button
         className={`bingo-square 
-          ${clicked[i] ? 'clicked' : ''} 
-          ${challengeResult === 'success' ? 'winner' : ''}
-          ${isChecking ? 'checking' : ''}
-          ${isCalledNumber ? 'current-call' : ''}`}
+          ${clicked[i] ? "clicked" : ""} 
+          ${challengeResult === "success" ? "winner" : ""}
+          ${isChecking ? "checking" : ""}
+          ${isCalledNumber ? "current-call" : ""}`}
         onClick={() => handleClick(i)}
         disabled={isChecking}
       >
@@ -140,24 +162,31 @@ const BingoGame = () => {
           <h2>Current Call</h2>
           <div className="number">{calledNumber}</div>
           <div className="timer">
-            <div className="timer-bar" style={{ width: `${(timeUntilNextCall / CALL_INTERVAL) * 100}%` }}></div>
-            <div className="timer-text">Next number in: {formatTime(timeUntilNextCall)}</div>
+            <div
+              className="timer-bar"
+              style={{ width: `${(timeUntilNextCall / CALL_INTERVAL) * 100}%` }}
+            ></div>
+            <div className="timer-text">
+              Next number in: {formatTime(timeUntilNextCall)}
+            </div>
           </div>
         </div>
         <div className="recent-calls">
           <h3>Recent Calls</h3>
           <div className="numbers">
             {recentCalls.slice(1).map((num, index) => (
-              <div key={index} className="recent-number">{num}</div>
+              <div key={index} className="recent-number">
+                {num}
+              </div>
             ))}
           </div>
         </div>
       </div>
 
-      {challengeResult === 'success' && (
+      {challengeResult === "success" && (
         <div className="win-message">BINGO!</div>
       )}
-      {challengeResult === 'failed' && (
+      {challengeResult === "failed" && (
         <div className="fail-message">Not quite right!</div>
       )}
       <div className="bingo-board">
@@ -171,16 +200,23 @@ const BingoGame = () => {
         ))}
       </div>
       {canChallenge && !isChecking && !challengeResult && (
-        <button 
-          className="challenge-button"
-          onClick={handleChallenge}
-        >
+        <button className="challenge-button" onClick={handleChallenge}>
           Challenge!
         </button>
       )}
       {isChecking && (
         <div className="checking-message">Checking your bingo...</div>
       )}
+      <button
+        className="challenge-button"
+        onClick={() => {
+          bingo_on_chain_backend.get_card().then((card) => {
+            console.log("CARD", card);
+          });
+        }}
+      >
+        Get Card!
+      </button>
     </div>
   );
 };

@@ -45,7 +45,8 @@ enum GameError {
 }
 
 #[update]
-async fn generate_card(caller: Principal) -> (Option<Card>, Option<GameError>) {
+async fn generate_card() -> (Option<Card>, Option<GameError>) {
+    let caller = ic_cdk::api::caller();
     let card = create_random_card(caller).await;
     STATE.with(|state| {
         let mut state = state.borrow_mut();
@@ -72,7 +73,8 @@ async fn generate_card(caller: Principal) -> (Option<Card>, Option<GameError>) {
 }
 
 #[update]
-async fn reset_card(caller: Principal) ->  (Option<Card>, Option<GameError>) {
+async fn reset_card() ->  (Option<Card>, Option<GameError>) {
+    let caller = ic_cdk::api::caller();
     let new_card = create_random_card(caller).await;
     STATE.with(|state| {
         let mut state = state.borrow_mut();
@@ -89,22 +91,36 @@ async fn reset_card(caller: Principal) ->  (Option<Card>, Option<GameError>) {
 
 
 async fn create_random_card(owner: Principal) -> Card {
-    let min = 1;
-    let max = 99;
     let mut used_numbers = HashSet::new();
     let mut numbers = vec![vec![0; CARD_SIZE]; CARD_SIZE];
 
-    // Generate 5x5 unique random numbers between 1 and 75
-    for i in 0..CARD_SIZE {
-        for j in 0..CARD_SIZE {
-            loop {
-                let bytes = raw_rand().await.unwrap().0;
-                let num_u32 = u32::from_le_bytes(bytes[0..8].try_into().unwrap());
-                let num = (num_u32 % (max - min + 1) as u32) + min as u32;
-                if used_numbers.insert(num) {
-                    numbers[i][j] = num;
-                    break;
-                }
+    // Generate 5x5 unique random numbers between 1 and 99
+    let mut matrix_index = 0;
+    let rand_numbers = raw_rand().await.unwrap();
+    // Convert byte32 to array of numbers
+    let random_numbers: Vec<u32> = rand_numbers.0.iter()
+        .map(|&x| x as u32)
+        .collect();
+
+    // Create vector from 1 to 99
+    let mut sequence: Vec<u32> = (1..=99).collect();
+
+    let mut current_byte_index = 0;
+    for i in (1..random_numbers.len()).rev() {
+        let j = (random_numbers[current_byte_index] as usize) % (i + 1);
+        sequence.swap(i, j);
+        current_byte_index = (current_byte_index + 1) % 32;
+    }
+
+    for num in sequence {
+        if used_numbers.insert(num) {  // returns true if number wasn't in set
+            let i = matrix_index / 5;
+            let j = matrix_index % 5;
+            numbers[i][j] = num;
+            matrix_index += 1;
+
+            if matrix_index >= CARD_SIZE * CARD_SIZE {
+                break;
             }
         }
     }
@@ -133,49 +149,47 @@ fn start_game_internal(state: &mut GameState) {
 }
 
 async fn generate_next_number() {
-    let min = 1;
-    let max = 99;
-    
     // Early return if game not active
     let is_active = STATE.with(|state| state.borrow().is_active);
     if !is_active {
         return;
     }
+    // Get remaining numbers that haven't been called
+    let called_numbers = STATE.with(|state| state.borrow().called_numbers.clone());
+    let mut sequence: Vec<u32> = (1..=99).collect();
+    sequence.retain(|num| !called_numbers.contains(num));
 
-    // Generate initial random number
-    let bytes = raw_rand().await.unwrap().0;
-    let mut new_number = {
-        let num_u32 = u32::from_le_bytes(bytes[0..4].try_into().unwrap());
-        (num_u32 % (max - min + 1) as u32) + min as u32
-    };
-
-    // Keep generating new numbers until we find an unused one
-    loop {
-        let should_continue = STATE.with(|state| {
+    if sequence.is_empty() {
+        STATE.with(|state| {
             let mut state = state.borrow_mut();
-            
-            if state.called_numbers.contains(&new_number) {
-                if state.called_numbers.len() >= 99 {
-                    state.is_active = false;
-                    return false;
-                }
-                return true;
-            }
-            
-            state.called_numbers.insert(new_number);
-            check_winners(&mut state);
-            false
+            state.is_active = false;
         });
-
-        if !should_continue {
-            break;
-        }
-
-        // Generate next random number
-        let bytes = raw_rand().await.unwrap().0;
-        let num_u32 = u32::from_le_bytes(bytes[0..4].try_into().unwrap());
-        new_number = (num_u32 % (max - min + 1) as u32) + min as u32;
+        return;
     }
+
+    // Shuffle sequence using random bytes
+    let rand_numbers = raw_rand().await.unwrap();
+    let random_numbers: Vec<u32> = rand_numbers.0.iter()
+        .map(|&x| x as u32)
+        .collect();
+
+    let mut current_byte_index = 0;
+    for i in (1..random_numbers.len()).rev() {
+        let j = (random_numbers[current_byte_index] as usize) % (i + 1);
+        sequence.swap(i, j);
+        current_byte_index = (current_byte_index + 1) % 32;
+    }
+
+    // Take first number from shuffled sequence
+    let new_number = sequence[0];
+
+    // Update game state
+    STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        state.called_numbers.insert(new_number);
+        check_winners(&mut state);
+    });
+
 }
 
 fn check_winners(state: &mut GameState) {
@@ -230,7 +244,8 @@ fn get_player_count() -> usize {
 }
 
 #[query]
-fn get_card(owner: Principal) -> Option<Card> {
+fn get_card() -> Option<Card> {
+    let owner = ic_cdk::api::caller();
     STATE.with(|state| state.borrow().cards.get(&owner).cloned())
 }
 
