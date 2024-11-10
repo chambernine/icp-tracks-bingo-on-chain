@@ -8,7 +8,8 @@ use serde::Deserialize;
 use ic_cdk::api::management_canister::main::raw_rand;
 // use serde_json::{self};
 
-const REQUIRED_PLAYERS: usize = 10;
+const REQUIRED_PLAYERS: usize = 2;
+const RANDOM_NUMBER_TIME_SECS: u64 = 15;
 const CARD_SIZE: usize = 5;
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
@@ -111,11 +112,19 @@ async fn create_random_card(owner: Principal) -> Card {
         sequence.swap(i, j);
         current_byte_index = (current_byte_index + 1) % 32;
     }
+    // Calculate middle position
+    let middle_row = CARD_SIZE / 2;
+    let middle_col = CARD_SIZE / 2;
 
     for num in sequence {
         if used_numbers.insert(num) {  // returns true if number wasn't in set
-            let i = matrix_index / 5;
-            let j = matrix_index % 5;
+            let i = matrix_index / CARD_SIZE;
+            let j = matrix_index % CARD_SIZE;
+            // Skip middle position
+            if i == middle_row && j == middle_col {
+                matrix_index += 1;
+                continue;
+            }
             numbers[i][j] = num;
             matrix_index += 1;
 
@@ -132,13 +141,15 @@ fn start_game_internal(state: &mut GameState) {
     if state.cards.len() < REQUIRED_PLAYERS {
         return;
     }
+    ic_cdk::api::print("Game started!");
 
     state.is_active = true;
     state.called_numbers.clear();
+    state.called_numbers.insert(0);
     state.winners.clear();
 
     // Set up timer to generate numbers every 15 seconds
-    let timer_id = set_timer_interval(Duration::from_secs(15), || {
+    let timer_id = set_timer_interval(Duration::from_secs(RANDOM_NUMBER_TIME_SECS), || {
         ic_cdk::spawn(async {
             generate_next_number().await;
         });
@@ -154,6 +165,8 @@ async fn generate_next_number() {
     if !is_active {
         return;
     }
+    ic_cdk::api::print("Random the next number!");
+
     // Get remaining numbers that haven't been called
     let called_numbers = STATE.with(|state| state.borrow().called_numbers.clone());
     let mut sequence: Vec<u32> = (1..=99).collect();
@@ -187,24 +200,25 @@ async fn generate_next_number() {
     STATE.with(|state| {
         let mut state = state.borrow_mut();
         state.called_numbers.insert(new_number);
-        check_winners(&mut state);
+        // check_winners(&mut state);
     });
 
 }
 
-fn check_winners(state: &mut GameState) {
-    for card in state.cards.values() {
-        if is_winner(&card.numbers, &state.called_numbers) {
-            state.winners.push(card.owner);
-            state.is_active = false;
-            
-            // Clear timer when game ends
-            if let Some(timer_id) = TIMER_ID.with_borrow(|id| id.clone()) {
-                ic_cdk_timers::clear_timer(timer_id);
-            }
-            break;
-        }
+#[update]
+fn challenge() -> bool {
+    let owner = ic_cdk::api::caller();
+    STATE.with(|state| {
+    let read_state = state.borrow().clone();
+    let card = read_state.cards.get(&owner).unwrap();
+    if is_winner(&card.numbers, &read_state.called_numbers){
+        let mut global_state = state.borrow_mut();
+        global_state.winners.push(owner);
+        global_state.is_active = false;
+        return true;
     }
+    false
+})
 }
 
 fn is_winner(card_numbers: &Vec<Vec<u32>>, called_numbers: &HashSet<u32>) -> bool {

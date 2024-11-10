@@ -27,4 +27,5 @@ service : {
   get_player_count: () -> (nat) query;
   get_card: () -> (opt Card) query;
   get_remaining_slots: () -> (nat) query;
+  challenge: () -> (bool);
 }
