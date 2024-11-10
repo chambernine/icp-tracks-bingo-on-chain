@@ -9,7 +9,7 @@ use ic_cdk::api::management_canister::main::raw_rand;
 // use serde_json::{self};
 
 const REQUIRED_PLAYERS: usize = 2;
-const RANDOM_NUMBER_TIME_SECS: u64 = 5;
+const RANDOM_NUMBER_TIME_SECS: u64 = 15;
 const CARD_SIZE: usize = 5;
 
 #[derive(Clone, Debug, CandidType, Deserialize)]
@@ -67,7 +67,7 @@ async fn generate_card() -> (Option<Card>, Option<GameError>) {
         state.cards.insert(caller, card.clone());
 
         // Auto-start game if we've reached required players
-        if state.cards.len() == REQUIRED_PLAYERS {
+        if state.cards.len()>= REQUIRED_PLAYERS {
             start_game_internal(&mut state);
         }
 
