@@ -5,6 +5,9 @@ import "./bingo-game.scss";
 const BingoGame = ({backendActor}) => {
   const HEADERS = ["B", "I", "N", "G", "O"];
   const CALL_INTERVAL = 15; // seconds
+
+  console.log(backendActor);
+  
   
 
   // Add timer state

@@ -68,10 +68,10 @@ const App = () => {
         const identity = authClient.getIdentity();
         const principal = identity.getPrincipal().toString();
         setPrincipal(principal);
+        const { agent, backend } = createAgentAndActor(authClient);
+        setBackendActor(backend);
       },
     });
-    const { agent, backend } = createAgentAndActor(authClient);
-    setBackendActor(backend);
   }
 
   async function logout() {
