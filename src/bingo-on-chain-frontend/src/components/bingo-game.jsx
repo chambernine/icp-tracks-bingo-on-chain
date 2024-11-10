@@ -6,35 +6,6 @@ const BingoGame = () => {
   const HEADERS = ["B", "I", "N", "G", "O"];
   const CALL_INTERVAL = 15; // seconds
 
-  // Your existing mock data
-  const mockBingoNumbers = [
-    12,
-    5,
-    22,
-    9,
-    15,
-    3,
-    18,
-    7,
-    24,
-    13,
-    16,
-    4,
-    "FREE",
-    11,
-    25,
-    8,
-    19,
-    2,
-    21,
-    14,
-    17,
-    6,
-    20,
-    1,
-    10,
-  ];
-
   // Add timer state
   const [timeUntilNextCall, setTimeUntilNextCall] = useState(CALL_INTERVAL);
 
@@ -46,10 +17,11 @@ const BingoGame = () => {
   const [challengeResult, setChallengeResult] = useState(null);
   const [calledNumber, setCalledNumber] = useState(null);
   const [recentCalls, setRecentCalls] = useState([]);
+  const [gameIsActive, setGameIsActive] = useState(false);
 
   // Initialize board with mock data
   useEffect(() => {
-    setBoard(mockBingoNumbers);
+    generateCardNumber();
   }, []);
 
   // Format time for display
@@ -59,18 +31,62 @@ const BingoGame = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Modified fetchCalledNumber to reset timer
+  //generate card 
+  const generateCardNumber = async () => {
+    try {
+      const [card, error] = await bingo_on_chain_backend.generate_card();
+      
+      if (error) {
+        console.log(error);
+        return;
+      }
+      if (card) {
+        return;
+      } else {
+        alert('No card was generated');
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getCard = async () => {
+    try {
+      bingo_on_chain_backend.get_card().then((card) => {
+        
+        const numbersArrays = card[0].numbers;
+        
+        const flattenedNumbers = Array.from({ length: 25 }, (_, index) => {
+          const arrayIndex = Math.floor(index / 5);
+          const position = index % 5;
+          
+          return numbersArrays[arrayIndex][position];
+        });
+        const transformedArray = flattenedNumbers.map(value => value === 0 ? "free" : value);
+
+        setBoard(transformedArray);
+        setClicked(Array(25).fill(false))
+      });
+      
+    } catch (error) {
+      console.error("Error :", error);
+    }
+  };
+
+  // Modified fetchCalledNumber to reset timers
   const fetchCalledNumber = async () => {
     try {
-      const newNumber = Math.floor(Math.random() * 75) + 1;
-      setCalledNumber(newNumber);
-      setRecentCalls((prev) => {
-        const updated = [newNumber, ...prev];
-        return updated.slice(0, 5);
+      bingo_on_chain_backend.get_game_state().then((val) => {
+        
+        setGameIsActive(val.is_active);
+        let arrayNumbers = Array.from(val.called_numbers).slice(1);
+        if(arrayNumbers.length > 0) {
+          setCalledNumber(arrayNumbers[arrayNumbers.length-1]);
+          setRecentCalls(arrayNumbers.slice(Math.max(0,arrayNumbers.length-7),arrayNumbers.length-1));
+        }
       });
-      setTimeUntilNextCall(CALL_INTERVAL); // Reset timer
     } catch (error) {
-      console.error("Error fetching called number:", error);
+      console.error("Error in fetchCalledNumber:", error);
     }
   };
 
@@ -109,14 +125,16 @@ const BingoGame = () => {
   };
 
   const handleChallenge = async () => {
-    bingo_on_chain_backend.generate_card().then((card) => {
-      console.log("CARD", card);
-    });
     setIsChecking(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const success = Math.random() > 0.5;
-      setChallengeResult(success ? "success" : "failed");
+      await bingo_on_chain_backend.challenge().then((val) => {
+        if (val){
+          setChallengeResult(val ? "success" : "failed");
+          setGameIsActive(false)
+          setCanChallenge(false)
+          setIsChecking(false);
+        }
+      });
       setTimeout(() => {
         setChallengeResult(null);
       }, 3000);
@@ -157,7 +175,7 @@ const BingoGame = () => {
 
   return (
     <div className="bingo-game">
-      <div className="called-numbers-display">
+      {gameIsActive ?    <div className="called-numbers-display">
         <div className="current-call">
           <h2>Current Call</h2>
           <div className="number">{calledNumber}</div>
@@ -181,7 +199,13 @@ const BingoGame = () => {
             ))}
           </div>
         </div>
-      </div>
+      </div> : 
+       <div >
+       <div>
+         <h1>Waiting for player</h1>
+       </div>
+     </div>
+      }
 
       {challengeResult === "success" && (
         <div className="win-message">BINGO!</div>
@@ -209,13 +233,9 @@ const BingoGame = () => {
       )}
       <button
         className="challenge-button"
-        onClick={() => {
-          bingo_on_chain_backend.get_card().then((card) => {
-            console.log("CARD", card);
-          });
-        }}
+        onClick={() => getCard()}
       >
-        Get Card!
+        {gameIsActive ? "UnClick" :"Get Card!"}
       </button>
     </div>
   );
