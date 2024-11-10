@@ -109,7 +109,7 @@ async fn create_random_card(owner: Principal) -> Card {
     let mut sequence: Vec<u32> = (1..=99).collect();
 
     let mut current_byte_index = 0;
-    for i in (1..random_numbers.len()).rev() {
+    for i in (1..random_numbers.len()-1).rev() {
         let j = (random_numbers[current_byte_index] as usize) % (i + 1);
         sequence.swap(i, j);
         current_byte_index = (current_byte_index + 1) % 32;
@@ -192,7 +192,7 @@ async fn generate_next_number() {
         .collect();
 
     let mut current_byte_index = 0;
-    for i in (1..random_numbers.len()).rev() {
+    for i in (1..random_numbers.len()-1).rev() {
         let j = (random_numbers[current_byte_index] as usize) % (i + 1);
         sequence.swap(i, j);
         current_byte_index = (current_byte_index + 1) % 32;
