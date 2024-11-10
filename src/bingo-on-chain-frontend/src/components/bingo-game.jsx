@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./bingo-game.scss";
-import { bingo_on_chain_backend } from "declarations/bingo-on-chain-backend";
+// import { backendActor } from "declarations/bingo-on-chain-backend";
 
-const BingoGame = () => {
+const BingoGame = ({backendActor}) => {
   const HEADERS = ["B", "I", "N", "G", "O"];
   const CALL_INTERVAL = 15; // seconds
+  
 
   // Add timer state
   const [timeUntilNextCall, setTimeUntilNextCall] = useState(CALL_INTERVAL);
@@ -34,7 +35,7 @@ const BingoGame = () => {
   //generate card 
   const generateCardNumber = async () => {
     try {
-      const [card, error] = await bingo_on_chain_backend.generate_card();
+      const [card, error] = await backendActor.generate_card();
       
       if (error) {
         console.log(error);
@@ -52,7 +53,7 @@ const BingoGame = () => {
 
   const getCard = async () => {
     try {
-      bingo_on_chain_backend.get_card().then((card) => {
+      backendActor.get_card().then((card) => {
         
         const numbersArrays = card[0].numbers;
         
@@ -76,7 +77,7 @@ const BingoGame = () => {
   // Modified fetchCalledNumber to reset timers
   const fetchCalledNumber = async () => {
     try {
-      bingo_on_chain_backend.get_game_state().then((val) => {
+      backendActor.get_game_state().then((val) => {
         
         setGameIsActive(val.is_active);
         let arrayNumbers = Array.from(val.called_numbers).slice(1);
@@ -127,7 +128,7 @@ const BingoGame = () => {
   const handleChallenge = async () => {
     setIsChecking(true);
     try {
-      await bingo_on_chain_backend.challenge().then((val) => {
+      await backendActor.challenge().then((val) => {
         if (val){
           setChallengeResult(val ? "success" : "failed");
           setGameIsActive(false)
@@ -235,7 +236,7 @@ const BingoGame = () => {
         className="challenge-button"
         onClick={() => getCard()}
       >
-        {gameIsActive ? "UnClick" :"Get Card!"}
+        Get Card!
       </button>
     </div>
   );

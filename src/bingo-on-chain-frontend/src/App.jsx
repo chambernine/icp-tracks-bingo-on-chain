@@ -1,15 +1,46 @@
 import React, { useState, useEffect } from "react";
 import { AuthClient } from "@dfinity/auth-client";
 import { BingoGame } from "./components";
+import { backend, canisterId, createActor } from "declarations/bingo-on-chain-backend";
+import { HttpAgent } from '@dfinity/agent';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authClient, setAuthClient] = useState(null);
   const [principal, setPrincipal] = useState(null);
+  const [backendActor, setBackendActor] = useState(null);
 
   useEffect(() => {
     initAuth();
   }, []);
+
+  function fetchRootkey(agent) {
+    // Fetch root key for certificate validation during development
+    if (process.env.DFX_NETWORK !== 'ic') {
+        agent.fetchRootKey().catch((err) => {
+            console.warn('Unable to fetch root key. Check to ensure that your local replica is running');
+            console.error(err);
+        });
+    }
+}
+
+  function createAgent(options = {}) {
+    const agent = new HttpAgent(options);
+    fetchRootkey(agent);
+    return agent;
+}
+
+  function createAgentAndActor(authClient) {
+    const identity = authClient.getIdentity();
+    
+    const agent = createAgent({ identity });
+    
+    const backend = createActor(canisterId, {
+        agent
+    });
+    
+    return { agent, backend };
+}
 
   async function initAuth() {
     const client = await AuthClient.create();
@@ -39,6 +70,8 @@ const App = () => {
         setPrincipal(principal);
       },
     });
+    const { agent, backend } = createAgentAndActor(authClient);
+    setBackendActor(backend);
   }
 
   async function logout() {
@@ -63,7 +96,7 @@ const App = () => {
                     Logout
                   </button>
                 </div>
-                <BingoGame />
+                <BingoGame backendActor={backendActor}/>
               </div>
             ) : (
               <button onClick={login} className="auth-button login">
