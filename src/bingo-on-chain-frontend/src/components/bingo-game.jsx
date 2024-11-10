@@ -42,6 +42,7 @@ const BingoGame = ({backendActor}) => {
       
       if (error) {
         console.log(error);
+        getCard();
         return;
       }
       if (card) {
