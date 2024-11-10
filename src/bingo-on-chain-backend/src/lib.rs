@@ -181,6 +181,8 @@ async fn generate_next_number() {
         STATE.with(|state| {
             let mut state = state.borrow_mut();
             state.is_active = false;
+            state.called_numbers.clear();
+            state.called_numbers.push(0);
         });
         return;
     }
@@ -221,6 +223,8 @@ fn challenge() -> bool {
         let mut global_state = state.borrow_mut();
         global_state.winners.push(owner);
         global_state.is_active = false;
+        global_state.called_numbers.clear();
+        global_state.called_numbers.push(0);
         return true;
     }
     false
